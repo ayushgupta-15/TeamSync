@@ -33,12 +33,14 @@ const accountSchema = new Schema<AccountDocument>(
   {
     timestamps: true,
     toJSON: {
-      transform(doc, ret) {
-        delete ret.refreshToken;
+      transform(doc, ret: Record<string, unknown>) {
+        delete (ret as Record<string, unknown>).refreshToken;
       },
     },
   }
 );
+
+accountSchema.index({ provider: 1, providerId: 1 }, { unique: true });
 
 const AccountModel = mongoose.model<AccountDocument>("Account", accountSchema);
 export default AccountModel;

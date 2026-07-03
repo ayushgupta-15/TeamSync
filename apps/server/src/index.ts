@@ -21,8 +21,13 @@ import projectRoutes from "./routes/project.route";
 import taskRoutes from "./routes/task.route";
 import { passportAuthenticateJWT } from "./config/passport.config";
 
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
+import mongoose from "mongoose";
+
 const app = express();
-const BASE_PATH = config.BASE_PATH;
+app.use(helmet());
+const BASE_PATH = config.BASE_PATH === "/api" ? "/api/v1" : config.BASE_PATH + "/v1";
 
 app.use(express.json());
 
@@ -44,7 +49,7 @@ app.use(passport.session());
 
 app.use(
   cors({
-    origin: config.FRONTEND_ORIGIN,
+    origin: config.FRONTEND_ORIGIN ? config.FRONTEND_ORIGIN.split(",") : "*",
     credentials: true,
   })
 );
@@ -52,17 +57,28 @@ app.use(
 app.get(
   `/`,
   asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    throw new BadRequestException(
-      "This is a bad request",
-      ErrorCodeEnum.AUTH_INVALID_TOKEN
-    );
     return res.status(HTTPSTATUS.OK).json({
       message: "Hello Subscribe to the channel & share",
     });
   })
 );
 
-app.use(`${BASE_PATH}/auth`, authRoutes);
+app.get("/health", (req, res) => {
+  res.json({
+    status: "ok",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected"
+  });
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: "Too many requests, please try again later." }
+});
+
+app.use(`${BASE_PATH}/auth`, authLimiter, authRoutes);
 app.use(`${BASE_PATH}/user`, passportAuthenticateJWT, userRoutes);
 app.use(`${BASE_PATH}/workspace`, passportAuthenticateJWT, workspaceRoutes);
 app.use(`${BASE_PATH}/member`, passportAuthenticateJWT, memberRoutes);

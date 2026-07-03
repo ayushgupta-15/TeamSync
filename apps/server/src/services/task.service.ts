@@ -33,7 +33,7 @@ export const createTaskService = async (
     });
 
     if (!isAssignedUserMember) {
-      throw new Error("Assigned user is not a member of this workspace.");
+      throw new BadRequestException("Assigned user is not a member of this workspace.");
     }
   }
   const task = new TaskModel({

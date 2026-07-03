@@ -27,11 +27,12 @@ API.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const { data } = error.response;
+    const data = error.response?.data;
 
-    // if (data === "Unauthorized" && status === 401) {
-    //   window.location.href = "/";
-    // }
+    if (error.response?.status === 401) {
+      useStore.getState().clearAccessToken();
+      window.location.href = "/";
+    }
 
     const customError: CustomError = {
       ...error,

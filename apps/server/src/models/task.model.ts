@@ -78,6 +78,10 @@ const taskSchema = new Schema<TaskDocument>(
     timestamps: true,
   }
 );
+taskSchema.index({ workspace: 1, status: 1 });
+taskSchema.index({ workspace: 1, project: 1 });
+taskSchema.index({ workspace: 1, assignedTo: 1 });
+taskSchema.index({ taskCode: 1 }, { unique: true });
 
 const TaskModel = mongoose.model<TaskDocument>("Task", taskSchema);
 

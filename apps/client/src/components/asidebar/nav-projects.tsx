@@ -25,11 +25,11 @@ import {
   } from "@/components/ui/sidebar";
   import useWorkspaceId from "@/hooks/use-workspace-id";
   import useCreateProjectDialog from "@/hooks/use-create-project-dialog";
-  import { ConfirmDialog } from "../resuable/confirm-dialog";
+  import { ConfirmDialog } from "../reusable/confirm-dialog";
   import useConfirmDialog from "@/hooks/use-confirm-dialog";
   import { Button } from "../ui/button";
   import { Permissions } from "@/constant";
-  import PermissionsGuard from "../resuable/permission-guard";
+  import PermissionsGuard from "../reusable/permission-guard";
   import { useState } from "react";
   import useGetProjectsInWorkspaceQuery from "@/hooks/api/use-get-projects";
   import { PaginationType } from "@/types/api.type";

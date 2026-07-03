@@ -69,3 +69,20 @@ export class UnauthorizedException extends AppError {
     );
   }
 }
+
+/**
+ * 403 Forbidden — user is authenticated but lacks permission for the action.
+ * Use this instead of UnauthorizedException for RBAC violations.
+ */
+export class ForbiddenException extends AppError {
+  constructor(
+    message = "You do not have permission to perform this action",
+    errorCode?: ErrorCodeEnumType
+  ) {
+    super(
+      message,
+      HTTPSTATUS.FORBIDDEN,
+      errorCode || ErrorCodeEnum.ACCESS_FORBIDDEN
+    );
+  }
+}

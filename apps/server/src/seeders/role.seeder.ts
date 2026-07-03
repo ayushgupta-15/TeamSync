@@ -1,5 +1,4 @@
 import "dotenv/config";
-import mongoose from "mongoose";
 import connectDatabase from "../config/database.config";
 import RoleModel from "../models/roles-permission.model";
 import { RolePermissions } from "../utils/role-permission";
@@ -10,44 +9,32 @@ const seedRoles = async () => {
   try {
     await connectDatabase();
 
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     console.log("Clearing existing roles...");
-    await RoleModel.deleteMany({}, { session });
+    await RoleModel.deleteMany({});
 
     for (const roleName in RolePermissions) {
       const role = roleName as keyof typeof RolePermissions;
       const permissions = RolePermissions[role];
 
-      // Check if the role already exists
-      const existingRole = await RoleModel.findOne({ name: role }).session(
-        session
-      );
+      const existingRole = await RoleModel.findOne({ name: role });
       if (!existingRole) {
-        const newRole = new RoleModel({
-          name: role,
-          permissions: permissions,
-        });
-        await newRole.save({ session });
-        console.log(`Role ${role} added with permissions.`);
+        const newRole = new RoleModel({ name: role, permissions });
+        await newRole.save();
+        console.log(`Role "${role}" added with ${permissions.length} permissions.`);
       } else {
-        console.log(`Role ${role} already exists.`);
+        console.log(`Role "${role}" already exists — skipping.`);
       }
     }
 
-    await session.commitTransaction();
-    console.log("Transaction committed.");
-
-    session.endSession();
-    console.log("Session ended.");
-
     console.log("Seeding completed successfully.");
+    process.exit(0);
   } catch (error) {
     console.error("Error during seeding:", error);
+    process.exit(1);
   }
 };
 
-seedRoles().catch((error) =>
-  console.error("Error running seed script:", error)
-);
+seedRoles().catch((error) => {
+  console.error("Error running seed script:", error);
+  process.exit(1);
+});
