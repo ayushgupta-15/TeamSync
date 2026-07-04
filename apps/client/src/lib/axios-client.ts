@@ -30,7 +30,6 @@ API.interceptors.response.use(
     const data = error.response?.data;
 
     if (error.response?.status === 401) {
-      const isAuthError = true;
       useStore.getState().clearAccessToken();
       const publicRoutes = ["/", "/sign-up"];
       if (!publicRoutes.includes(window.location.pathname)) {
