@@ -3,6 +3,7 @@ process.env.MONGO_URI = "mongodb://127.0.0.1:27017/teamsync-test-placeholder";
 process.env.BASE_PATH = "/api";
 process.env.PORT = "8001";
 process.env.SESSION_SECRET = "test-session-secret";
+process.env.SESSION_EXPIRES_IN = "1d";
 process.env.JWT_SECRET = "test-jwt-secret";
 process.env.JWT_EXPIRES_IN = "1h";
 process.env.GOOGLE_CLIENT_ID = "test-google-client-id";
