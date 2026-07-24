@@ -1,0 +1,12 @@
+process.env.NODE_ENV = "test";
+process.env.MONGO_URI = "mongodb://127.0.0.1:27017/teamsync-test-placeholder";
+process.env.BASE_PATH = "/api";
+process.env.PORT = "8001";
+process.env.SESSION_SECRET = "test-session-secret";
+process.env.JWT_SECRET = "test-jwt-secret";
+process.env.JWT_EXPIRES_IN = "1h";
+process.env.GOOGLE_CLIENT_ID = "test-google-client-id";
+process.env.GOOGLE_CLIENT_SECRET = "test-google-client-secret";
+process.env.GOOGLE_CALLBACK_URL = "http://localhost:8001/api/v1/auth/google/callback";
+process.env.FRONTEND_ORIGIN = "http://localhost:5173";
+process.env.FRONTEND_GOOGLE_CALLBACK_URL = "http://localhost:5173/auth/callback";

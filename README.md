@@ -1,6 +1,6 @@
 # TeamSync — B2B Project Management Platform
 
-> A full-stack, production-grade project management platform for teams — built as a monorepo powered by **npm workspaces**.
+> A full-stack B2B project management platform for teams — built as a monorepo powered by **npm workspaces**, with server-enforced multi-tenancy and RBAC.
 
 <div align="center">
   <img src="./docs/assets/banner.png" alt="TeamSync Banner" width="100%" />
@@ -45,23 +45,26 @@ This repository is designed with a layered service architecture, multi-tenant wo
 
 Most project management tools are either overly complex for small teams or lack customizable access control.
 
-TeamSync was built to demonstrate how a scalable, multi-tenant collaboration platform can be architected using modern full-stack technologies while maintaining clean separation of concerns and production-ready engineering practices.
+TeamSync was built to demonstrate how a multi-tenant collaboration platform can be architected with server-enforced tenant isolation and RBAC, using modern full-stack technologies and a clean separation of concerns — see [Known Limitations](#-known-limitations) for what's still rough around the edges.
 
 ---
 
 ## 🚀 Live Demo
 
-*(Placeholder: Link to the deployed application will be added here once hosting is configured)*
+- **App**: [teamsync-platform.vercel.app](https://teamsync-platform.vercel.app/)
+- **API**: [teamsync-api-hnxl.onrender.com](https://teamsync-api-hnxl.onrender.com/) (`/health` reports live DB connection status)
+
+The API runs on Render's free tier, so the first request after a period of inactivity can take up to ~30-60s while the instance spins back up.
 
 ---
 
-## 🌟 Production Highlights
+## 🌟 Engineering Highlights
 
-- **Multi-Tenant Architecture**: Strict data isolation between workspaces.
-- **Advanced RBAC**: Fine-grained, role-based access control mapped to specific user permissions.
-- **Layered Security**: Rate limiting, Helmet headers, protected routes, and safe JWT management.
+- **Multi-Tenant Architecture**: Every workspace-scoped query is filtered by `workspaceId` at the database layer (not just hidden in the UI), and membership is verified server-side before any read or write. Covered by integration tests — see [Testing Strategy](#-testing-strategy).
+- **Server-Enforced RBAC**: Every mutating route checks the caller's role against a permission map *before* the service layer runs, independent of anything the client sends or renders.
+- **Layered Security**: Rate limiting, Helmet headers, and JWT-based authentication (see [Known Limitations](#-known-limitations) for what's not yet hardened).
 - **Optimized Data Layer**: MongoDB aggregation pipelines and strategic indexing.
-- **Monorepo Design**: Shared dependencies and streamlined CI/CD through npm workspaces.
+- **Monorepo Design**: Independently deployable client/server packages with npm workspaces.
 
 ---
 
@@ -336,15 +339,15 @@ All routes are prefixed with `/api/v1`.
 
 ## 🧪 Testing Strategy
 
-**Current Status:**
-- Backend integration tests (planned)
-- Frontend component tests (planned)
+**Current status:**
+- **Backend — covered**: Jest + Supertest + `mongodb-memory-server` run real HTTP requests against the Express app with an in-memory MongoDB instance (no mocking of Mongoose or Express). Coverage is deliberately concentrated on the two claims that matter most for a multi-tenant, RBAC-gated API:
+  - `src/test/tenant-isolation.test.ts` — proves a member of workspace B gets `401` when it tries to read or fetch a project that belongs to workspace A, and that the owning workspace's member can.
+  - `src/test/auth.service.test.ts` — registration, duplicate-email rejection, login with correct/incorrect password, and workspace-membership checks for both members and non-members.
+  - Run locally: `npm run test --workspace=apps/server`. Runs in CI on every push/PR.
+- **Backend — not yet covered**: task/workspace/member controllers beyond the paths above, Google OAuth callback flow, Zod validation edge cases.
+- **Frontend — not yet covered**: no component or E2E tests exist yet for `apps/client`.
 
-**Frameworks:**
-- **Jest**: Backend unit testing
-- **Supertest**: API endpoint validation
-- **Vitest**: Frontend unit testing
-- **React Testing Library**: Component rendering & interaction
+**Frameworks in use:** Jest, ts-jest, Supertest, `mongodb-memory-server` (backend only — no frontend test framework is installed yet).
 
 ---
 
@@ -358,7 +361,7 @@ Push / PR Trigger
       ▼
 GitHub Actions Runtime
       │
-      ├── [Job: Server] ──> Install ──> Build
+      ├── [Job: Server] ──> Install ──> Test (Jest) ──> Build
       │
       └── [Job: Client] ──> Install ──> Lint ──> Build
 ```
@@ -400,7 +403,9 @@ Controller
 
 ---
 
-## 🌐 Deployment Architecture (Target)
+## 🌐 Deployment Architecture
+
+Live today at the links in [Live Demo](#-live-demo):
 
 ```text
       React SPA
@@ -448,6 +453,16 @@ Controller
 - **GitHub Actions CI**
 
 ---
+
+## ⚠️ Known Limitations
+
+Being upfront about the current gaps, since they matter more than the feature list:
+
+- **No refresh-token rotation.** Access tokens are JWTs valid for 7 days (`JWT_EXPIRES_IN`). There is no refresh flow — when the token expires, the client just clears it and redirects to login. `AccountModel.refreshToken` exists in the schema but is never written or read anywhere; it was scaffolded for a future refresh flow and never wired up.
+- **JWT passed via URL query parameter on the OAuth redirect.** After a successful Google login, the server redirects to `${FRONTEND_GOOGLE_CALLBACK_URL}?status=success&access_token=...`. This works, but it means the token can end up in browser history and server access logs — an HttpOnly cookie or a one-time exchange code would be the safer pattern.
+- **`ADD_MEMBER` is an orphaned permission.** It's defined in the RBAC permission map and assigned to `OWNER`/`ADMIN`, but no controller currently enforces it — the only way to join a workspace today is self-service via invite code, which doesn't require it.
+- **No transactional writes across documents.** Registration and OAuth signup each create a User, Account, Workspace, and Member document as separate, non-atomic writes (Mongoose transactions require a replica set, which standalone MongoDB doesn't provide — see the comment in `auth.service.ts`). A crash mid-registration can leave partial state.
+- **Frontend has no test coverage.** See [Testing Strategy](#-testing-strategy).
 
 ## 🗺️ Planned Enhancements
 
